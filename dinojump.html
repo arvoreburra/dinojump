@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dino Jump</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        body {
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 50%, #FFF8DC 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .score-box {
+            background: rgba(255,255,255,0.9);
+            padding: 8px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: inline-block;
+            margin: 2px;
+        }
+        .score-box h2 {
+            color: #FF6B35;
+            font-size: 18px;
+            text-shadow: 1px 1px 0px #fff;
+        }
+        .score-box p {
+            color: #2C3E50;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 20;
+            overflow-y: auto;
+        }
+        #gameOverScreen.active {
+            display: flex;
+        }
+        .game-over-box {
+            background: linear-gradient(135deg, #FFE5B4, #FFDAB9);
+            padding: 30px 25px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            border: 4px solid #FF8C00;
+            animation: popIn 0.4s ease-out;
+            max-width: 380px;
+            width: 90%;
+            margin: 20px 0;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .game-over-box h1 {
+            color: #E74C3C;
+            font-size: 36px;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 0px #fff;
+        }
+        .game-over-box .final-score {
+            color: #2C3E50;
+            font-size: 24px;
+            margin: 8px 0;
+        }
+        .game-over-box .high-score {
+            color: #F39C12;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        #restartBtn {
+            background: linear-gradient(135deg, #2ECC71, #27AE60);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            pointer-events: all;
+            margin-top: 10px;
+        }
+        #restartBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.5);
+        }
+        #restartBtn:active {
+            transform: translateY(0);
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 50%, #FFF8DC 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 30;
+        }
+        #startScreen.hidden {
+            display: none;
+        }
+        .start-box {
+            text-align: center;
+            animation: float 2s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .start-box h1 {
+            font-size: 52px;
+            color: #FF6B35;
+            text-shadow: 3px 3px 0px #fff, 5px 5px 0px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .start-box p {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        #startBtn {
+            background: linear-gradient(135deg, #FF6B35, #E55A2B);
+            color: white;
+            border: none;
+            padding: 16px 45px;
+            font-size: 26px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+            transition: transform 0.2s;
+        }
+        #startBtn:hover {
+            transform: scale(1.05);
+        }
+        .dino-emoji {
+            font-size: 70px;
+            margin-bottom: 10px;
+        }
+        #tiltHint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.8);
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            color: #666;
+            display: none;
+        }
+
+        .leaderboard-section {
+            margin-top: 15px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 15px;
+            padding: 12px;
+            text-align: left;
+        }
+        .leaderboard-section h3 {
+            text-align: center;
+            color: #E67E22;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            border-radius: 8px;
+            margin: 3px 0;
+            font-size: 15px;
+        }
+        .leaderboard-row:nth-child(2) { background: rgba(255,215,0,0.3); font-weight: bold; }
+        .leaderboard-row:nth-child(3) { background: rgba(192,192,192,0.3); }
+        .leaderboard-row:nth-child(4) { background: rgba(205,127,50,0.2); }
+        .leaderboard-row:hover { background: rgba(0,0,0,0.05); }
+        .lb-rank { width: 30px; color: #666; }
+        .lb-name { flex: 1; color: #2C3E50; }
+        .lb-score { color: #E74C3C; font-weight: bold; }
+
+        .name-input-section {
+            margin: 10px 0;
+        }
+        .name-input-section input {
+            padding: 10px 15px;
+            border: 2px solid #FF8C00;
+            border-radius: 20px;
+            font-size: 16px;
+            font-family: inherit;
+            width: 200px;
+            text-align: center;
+            outline: none;
+        }
+        .name-input-section input:focus {
+            border-color: #FF6B35;
+            box-shadow: 0 0 10px rgba(255,107,53,0.3);
+        }
+        #saveScoreBtn {
+            background: linear-gradient(135deg, #3498DB, #2980B9);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            margin-top: 8px;
+            pointer-events: all;
+        }
+        #saveScoreBtn:disabled {
+            background: #95A5A6;
+            cursor: not-allowed;
+        }
+        .loading-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        #firebaseStatus {
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            font-size: 11px;
+            color: rgba(0,0,0,0.4);
+            z-index: 5;
+            pointer-events: none;
+        }
+        #firebaseStatus.connected { color: #27ae60; }
+        #firebaseStatus.error { color: #e74c3c; }
+
+        #fpsCounter {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 11px;
+            color: rgba(0,0,0,0.3);
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="score-box">
+            <h2>SCORE</h2>
+            <p id="scoreDisplay">0</p>
+        </div>
+        <div class="score-box">
+            <h2>MAX</h2>
+            <p id="highScoreDisplay">0</p>
+        </div>
+    </div>
+
+    <div id="startScreen">
+        <div class="start-box">
+            <div class="dino-emoji">🦖</div>
+            <h1>DINO JUMP</h1>
+            <p>Incline o celular para mover • Use ← → no PC</p>
+            <button id="startBtn">JOGAR!</button>
+        </div>
+    </div>
+
+    <div id="gameOverScreen">
+        <div class="game-over-box">
+            <h1>GAME OVER</h1>
+            <p class="final-score">Score: <span id="finalScore">0</span></p>
+            <p class="high-score">🏆 Seu Recorde: <span id="finalHighScore">0</span></p>
+
+            <div class="name-input-section" id="nameInputSection">
+                <p style="color:#666; font-size:14px; margin-bottom:5px;">Salve seu score no ranking global!</p>
+                <input type="text" id="playerName" placeholder="Seu nome" maxlength="15">
+                <br>
+                <button id="saveScoreBtn">💾 SALVAR SCORE</button>
+                <p id="saveStatus" class="loading-text"></p>
+            </div>
+
+            <div class="leaderboard-section">
+                <h3>Ranking Global</h3>
+                <div id="leaderboardList">
+                    <p style="text-align:center; color:#999; font-size:14px;">Aguardando Firebase...</p>
+                </div>
+            </div>
+
+            <button id="restartBtn">JOGAR NOVAMENTE</button>
+        </div>
+    </div>
+
+    <div id="tiltHint">Incline o celular para mover o dinossauro</div>
+    <div id="fpsCounter">60 FPS</div>
+    <div id="firebaseStatus">Firebase: inicializando...</div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            orderBy, 
+            limit, 
+            onSnapshot, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ============================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ============================================
+		const firebaseConfig = {
+			apiKey: "SUA_API_KEY",
+			authDomain: "seu-projeto.firebaseapp.com",
+			projectId: "seu-projeto",
+			storageBucket: "seu-projeto.appspot.com",
+			messagingSenderId: "123456789",
+			appId: "1:123456789:web:abcdef"
+		};
+
+        let db = null;
+        let firebaseReady = false;
+        const statusEl = document.getElementById('firebaseStatus');
+
+        function updateStatus(text, type = '') {
+            statusEl.textContent = text;
+            statusEl.className = type;
+            console.log('[Firebase]', text);
+        }
+
+        try {
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "SUA_API_KEY_AQUI" && firebaseConfig.apiKey.length > 10) {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                firebaseReady = true;
+                updateStatus('Firebase conectado!', 'connected');
+            } else {
+                updateStatus('Firebase não configurado', 'error');
+            }
+        } catch (e) {
+            updateStatus('Erro: ' + e.message, 'error');
+            console.error('Firebase init error:', e);
+        }
+
+        // ==================== DELTA TIME / GAME LOOP ====================
+        // Isso garante que o jogo rode na mesma velocidade em 60Hz, 120Hz, 144Hz, 240Hz
+        const TARGET_FPS = 60;
+        const TARGET_DT = 1000 / TARGET_FPS; // ~16.67ms por frame
+        let lastTime = 0;
+        let dt = TARGET_DT; // delta time em ms
+        let accumulatedDt = 0;
+        const fpsEl = document.getElementById('fpsCounter');
+        let frameCount = 0;
+        let fpsTime = 0;
+
+        // ==================== CONFIGURAÇÕES DO JOGO ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth, 450);
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let gameRunning = false;
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('dinoJumpHighScore')) || 0;
+        let cameraY = 0;
+        let tiltX = 0;
+        let playerName = localStorage.getItem('dinoJumpPlayerName') || '';
+        let scoreSaved = false;
+        let leaderboardUnsub = null;
+
+        // Velocidades base (por segundo, não por frame)
+        const dino = {
+            x: canvas.width / 2,
+            y: canvas.height - 150,
+            width: 50,
+            height: 55,
+            vx: 0,
+            vy: 0,
+            speed: 360,        // pixels por segundo
+            jumpPower: -840,   // pixels por segundo
+            gravity: 1200,     // pixels por segundo²
+            onGround: false,
+            facingRight: true,
+            animFrame: 0,
+            animTimer: 0,
+            color: '#4CAF50'
+        };
+
+        let platforms = [];
+        const platformWidth = 90;
+        const platformHeight = 25;
+        const platformGap = 100;
+        let particles = [];
+        let stars = [];
+        for (let i = 0; i < 30; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 3 + 1,
+                twinkle: Math.random() * Math.PI * 2
+            });
+        }
+
+        // ==================== CONTROLES ====================
+        const keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        let accelerometerPermission = false;
+
+        async function requestAccelerometer() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    accelerometerPermission = permission === 'granted';
+                } catch (e) {
+                    console.log('Permissão do acelerômetro negada');
+                }
+            } else {
+                accelerometerPermission = true;
+            }
+        }
+
+        window.addEventListener('deviceorientation', (e) => {
+            if (!gameRunning) return;
+            const gamma = e.gamma || 0;
+            tiltX = Math.max(-1, Math.min(1, gamma / 30));
+        });
+
+        window.addEventListener('devicemotion', (e) => {
+            if (!gameRunning || Math.abs(tiltX) > 0.1) return;
+            const accel = e.accelerationIncludingGravity;
+            if (accel && accel.x !== null) {
+                tiltX = Math.max(-1, Math.min(1, accel.x / 5));
+            }
+        });
+
+        let touchStartX = 0;
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            if (!gameRunning) return;
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            tiltX = Math.max(-1, Math.min(1, diff / 50));
+        });
+        canvas.addEventListener('touchend', () => {
+            tiltX = 0;
+        });
+
+        // ==================== FUNÇÕES DO JOGO ====================
+
+        function createPlatform(y, isFirst = false) {
+            const minX = 30;
+            const maxX = canvas.width - platformWidth - 30;
+            const x = Math.random() * (maxX - minX) + minX;
+
+            const types = ['normal', 'moving', 'breakable'];
+            let type = 'normal';
+            if (!isFirst && score > 500 && Math.random() < 0.15) type = 'moving';
+            if (!isFirst && score > 1000 && Math.random() < 0.1) type = 'breakable';
+
+            return {
+                x: x,
+                y: y,
+                width: platformWidth,
+                height: platformHeight,
+                type: type,
+                moveSpeed: type === 'moving' ? (Math.random() > 0.5 ? 90 : -90) : 0, // px/s
+                moveRange: 60,
+                moveStart: x,
+                broken: false,
+                breakTimer: 0
+            };
+        }
+
+        function initPlatforms() {
+            platforms = [];
+            platforms.push({
+                x: canvas.width / 2 - platformWidth / 2,
+                y: canvas.height - 80,
+                width: platformWidth + 40,
+                height: platformHeight,
+                type: 'normal',
+                moveSpeed: 0,
+                broken: false
+            });
+
+            for (let i = 1; i < 15; i++) {
+                platforms.push(createPlatform(canvas.height - 80 - i * platformGap, i === 1));
+            }
+        }
+
+        function spawnParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 360,  // px/s
+                    vy: (Math.random() - 0.5) * 360,  // px/s
+                    life: 1,
+                    color: color,
+                    size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        function updateParticles(dtSeconds) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx * dtSeconds;
+                p.y += p.vy * dtSeconds;
+                p.vy += 60 * dtSeconds; // gravidade leve das partículas
+                p.life -= 1.8 * dtSeconds;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y - cameraY, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawCloud(x, y, width, height, type, broken) {
+            if (broken) return;
+
+            ctx.save();
+            const cy = y - cameraY;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.beginPath();
+            ctx.ellipse(x + width/2, cy + height - 2, width/2, height/3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (type === 'breakable') {
+                ctx.fillStyle = '#E74C3C';
+            } else if (type === 'moving') {
+                ctx.fillStyle = '#9B59B6';
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+            }
+
+            const circles = [
+                {dx: width * 0.2, dy: height * 0.3, r: height * 0.6},
+                {dx: width * 0.5, dy: height * 0.2, r: height * 0.7},
+                {dx: width * 0.8, dy: height * 0.3, r: height * 0.6},
+                {dx: width * 0.35, dy: height * 0.5, r: height * 0.5},
+                {dx: width * 0.65, dy: height * 0.5, r: height * 0.5}
+            ];
+
+            circles.forEach(c => {
+                ctx.beginPath();
+                ctx.arc(x + c.dx, cy + c.dy, c.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.fillRect(x + width * 0.15, cy + height * 0.4, width * 0.7, height * 0.4);
+
+            if (type === 'moving') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '14px Arial';
+                ctx.fillText('↔', x + width/2 - 7, cy + height/2 + 5);
+            } else if (type === 'breakable') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '14px Arial';
+                ctx.fillText('!', x + width/2 - 3, cy + height/2 + 5);
+            }
+
+            ctx.restore();
+        }
+
+        function drawDino() {
+            const x = dino.x;
+            const y = dino.y - cameraY;
+            const w = dino.width;
+            const h = dino.height;
+
+            ctx.save();
+
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + h/2 + 5, w/2, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (!dino.facingRight) {
+                ctx.translate(x, y);
+                ctx.scale(-1, 1);
+                ctx.translate(-x, -y);
+            }
+
+            ctx.fillStyle = '#66BB6A';
+            ctx.beginPath();
+            ctx.roundRect(x - w/2 + 5, y - h/2 + 10, w - 10, h - 15, 15);
+            ctx.fill();
+
+            ctx.fillStyle = '#81C784';
+            ctx.beginPath();
+            ctx.roundRect(x - w/2 + 12, y - h/2 + 18, w - 24, h - 28, 10);
+            ctx.fill();
+
+            ctx.fillStyle = '#66BB6A';
+            ctx.beginPath();
+            ctx.arc(x + 8, y - h/2 + 5, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.ellipse(x + 14, y - h/2, 8, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#2C3E50';
+            ctx.beginPath();
+            ctx.arc(x + 16, y - h/2 + 1, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(x + 17, y - h/2 - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#2C3E50';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x + 12, y - h/2 + 5, 6, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x + 10, y - h/2 + 5, 4, 4);
+            ctx.fillRect(x + 15, y - h/2 + 5, 4, 4);
+
+            ctx.fillStyle = '#388E3C';
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y - h/2 - 5);
+            ctx.lineTo(x - 2, y - h/2 - 18);
+            ctx.lineTo(x + 3, y - h/2 - 8);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x + 5, y - h/2 - 8);
+            ctx.lineTo(x + 10, y - h/2 - 20);
+            ctx.lineTo(x + 13, y - h/2 - 10);
+            ctx.fill();
+
+            const legOffset = Math.sin(dino.animFrame * 0.3) * 4;
+            ctx.fillStyle = '#4CAF50';
+
+            ctx.beginPath();
+            ctx.roundRect(x - 12, y + h/2 - 12, 10, 14 + legOffset, 5);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.roundRect(x + 2, y + h/2 - 12, 10, 14 - legOffset, 5);
+            ctx.fill();
+
+            ctx.fillStyle = '#66BB6A';
+            const armAngle = Math.sin(dino.animFrame * 0.2) * 0.3;
+            ctx.save();
+            ctx.translate(x - 8, y - 5);
+            ctx.rotate(armAngle);
+            ctx.beginPath();
+            ctx.roundRect(-4, -3, 8, 16, 4);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(x + 8, y - 5);
+            ctx.rotate(-armAngle);
+            ctx.beginPath();
+            ctx.roundRect(-4, -3, 8, 16, 4);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.ellipse(x - w/2 + 3, y + 5, 8, 4, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawBackground() {
+            stars.forEach(star => {
+                const sy = (star.y - cameraY * 0.3) % (canvas.height + 50);
+                const drawY = sy < -10 ? sy + canvas.height + 50 : sy;
+
+                ctx.fillStyle = `rgba(255, 255, 200, ${0.3 + Math.sin(star.twinkle + Date.now() * 0.003) * 0.3})`;
+                ctx.beginPath();
+                ctx.arc(star.x, drawY, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const bgClouds = [
+                {x: 50, y: 100, s: 0.6},
+                {x: canvas.width - 100, y: 200, s: 0.8},
+                {x: 150, y: 400, s: 0.5},
+                {x: canvas.width - 80, y: 600, s: 0.7}
+            ];
+
+            bgClouds.forEach(cloud => {
+                const cy = (cloud.y - cameraY * 0.2) % (canvas.height + 200);
+                const drawY = cy < -100 ? cy + canvas.height + 200 : cy;
+
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(cloud.x, drawY, 30 * cloud.s, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 25 * cloud.s, drawY - 10 * cloud.s, 35 * cloud.s, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 50 * cloud.s, drawY, 30 * cloud.s, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function update(dtSeconds) {
+            if (!gameRunning) return;
+
+            // Animação: incrementa baseado no tempo, não no frame
+            dino.animTimer += dtSeconds;
+            dino.animFrame = Math.floor(dino.animTimer * 10); // 10 animações por segundo
+
+            let moveX = 0;
+
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) moveX = -1;
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) moveX = 1;
+
+            if (Math.abs(tiltX) > 0.1) {
+                moveX = tiltX;
+            }
+
+            // Movimento horizontal com delta time
+            dino.vx = moveX * dino.speed;
+            dino.x += dino.vx * dtSeconds;
+
+            if (moveX > 0) dino.facingRight = true;
+            if (moveX < 0) dino.facingRight = false;
+
+            if (dino.x < -dino.width/2) dino.x = canvas.width + dino.width/2;
+            if (dino.x > canvas.width + dino.width/2) dino.x = -dino.width/2;
+
+            // Gravidade com delta time
+            dino.vy += dino.gravity * dtSeconds;
+            dino.y += dino.vy * dtSeconds;
+
+            dino.onGround = false;
+
+            for (let platform of platforms) {
+                if (platform.broken) continue;
+
+                if (platform.type === 'moving') {
+                    platform.x += platform.moveSpeed * dtSeconds;
+                    if (platform.x > platform.moveStart + platform.moveRange || 
+                        platform.x < platform.moveStart - platform.moveRange) {
+                        platform.moveSpeed *= -1;
+                    }
+                }
+
+                // Colisão: verifica se está caindo e cruzou a plataforma
+                if (dino.vy > 0 &&
+                    dino.x + dino.width/3 > platform.x &&
+                    dino.x - dino.width/3 < platform.x + platform.width &&
+                    dino.y + dino.height/2 > platform.y &&
+                    dino.y + dino.height/2 < platform.y + platform.height + dino.vy * dtSeconds + 10) {
+
+                    dino.y = platform.y - dino.height/2;
+                    dino.vy = dino.jumpPower;
+                    dino.onGround = true;
+
+                    spawnParticles(dino.x, dino.y + dino.height/2, '#DEB887', 5);
+
+                    if (platform.type === 'breakable') {
+                        platform.broken = true;
+                        platform.breakTimer = 10;
+                        spawnParticles(platform.x + platform.width/2, platform.y, '#E74C3C', 12);
+                    }
+                }
+            }
+
+            // Câmera segue suavemente
+            const targetCameraY = dino.y - canvas.height * 0.6;
+            if (targetCameraY < cameraY) {
+                cameraY = targetCameraY;
+            }
+
+            const newScore = Math.max(0, Math.floor((canvas.height - 80 - dino.y) / 10));
+            if (newScore > score) {
+                score = newScore;
+                document.getElementById('scoreDisplay').textContent = score;
+            }
+
+            const highestPlatform = platforms[platforms.length - 1];
+            if (highestPlatform.y > cameraY - 200) {
+                platforms.push(createPlatform(highestPlatform.y - platformGap - Math.random() * 30));
+            }
+
+            platforms = platforms.filter(p => p.y < cameraY + canvas.height + 100);
+
+            if (dino.y > cameraY + canvas.height + 100) {
+                gameOver();
+            }
+
+            updateParticles(dtSeconds);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+
+            platforms.forEach(platform => {
+                if (platform.y > cameraY - 100 && platform.y < cameraY + canvas.height + 100) {
+                    drawCloud(platform.x, platform.y, platform.width, platform.height, platform.type, platform.broken);
+                }
+            });
+
+            drawParticles();
+
+            if (gameRunning || dino.y > cameraY - 100) {
+                drawDino();
+            }
+        }
+
+        // ==================== GAME LOOP COM DELTA TIME ====================
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+
+            // Calcula delta time em milissegundos
+            dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Limita dt para evitar saltos enormes (ex: aba mudou de foco)
+            if (dt > 100) dt = TARGET_DT;
+            if (dt < 1) dt = 1;
+
+            const dtSeconds = dt / 1000;
+
+            // FPS counter
+            frameCount++;
+            fpsTime += dt;
+            if (fpsTime >= 1000) {
+                fpsEl.textContent = Math.round(frameCount * 1000 / fpsTime) + ' FPS';
+                frameCount = 0;
+                fpsTime = 0;
+            }
+
+            update(dtSeconds);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== LEADERBOARD / FIREBASE ====================
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderLeaderboard(snapshot) {
+            const listEl = document.getElementById('leaderboardList');
+            let html = '';
+            let rank = 1;
+
+            if (snapshot.empty) {
+                listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">Nenhum score ainda. Seja o primeiro! 🦖</p>';
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+                html += `
+                    <div class="leaderboard-row">
+                        <span class="lb-rank">${medal}</span>
+                        <span class="lb-name">${escapeHtml(data.name || 'Anônimo')}</span>
+                        <span class="lb-score">${data.score || 0}</span>
+                    </div>
+                `;
+                rank++;
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        function loadLeaderboard() {
+            const listEl = document.getElementById('leaderboardList');
+
+            if (leaderboardUnsub) {
+                leaderboardUnsub();
+                leaderboardUnsub = null;
+            }
+
+            if (!firebaseReady || !db) {
+                listEl.innerHTML = `
+                    <p style="text-align:center; color:#e74c3c; font-size:13px;">
+                        🔧 Firebase não conectado.<br>
+                        Verifique se preencheu o <code>firebaseConfig</code> corretamente.<br>
+                        <span style="font-size:11px; color:#999;">(Abra o console F12 para ver o erro)</span>
+                    </p>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = '<p style="text-align:center; color:#999; font-size:14px;">Carregando ranking...</p>';
+
+            try {
+                const q = query(
+                    collection(db, 'scores'),
+                    orderBy('score', 'desc'),
+                    limit(10)
+                );
+
+                leaderboardUnsub = onSnapshot(q, (snapshot) => {
+                    renderLeaderboard(snapshot);
+                }, (error) => {
+                    console.error('Erro ao carregar leaderboard:', error);
+                    listEl.innerHTML = `
+                        <p style="text-align:center; color:#e74c3c; font-size:13px;">
+                             Erro ao carregar ranking.<br>
+                            ${escapeHtml(error.message)}<br>
+                            <span style="font-size:11px;">Verifique as regras do Firestore (modo de teste)</span>
+                        </p>
+                    `;
+                });
+            } catch (e) {
+                console.error('Erro na query:', e);
+                listEl.innerHTML = `<p style="text-align:center; color:#e74c3c; font-size:13px;">Erro: ${escapeHtml(e.message)}</p>`;
+            }
+        }
+
+        async function saveScoreToFirebase() {
+            const nameInput = document.getElementById('playerName');
+            const saveBtn = document.getElementById('saveScoreBtn');
+            const statusEl = document.getElementById('saveStatus');
+
+            let name = nameInput.value.trim();
+            if (!name) {
+                statusEl.textContent = 'Digite seu nome!';
+                statusEl.style.color = '#e74c3c';
+                return;
+            }
+
+            if (!firebaseReady || !db) {
+                statusEl.textContent = 'Firebase não conectado. Verifique a configuração.';
+                statusEl.style.color = '#e74c3c';
+                return;
+            }
+
+            saveBtn.disabled = true;
+            statusEl.textContent = 'Salvando...';
+            statusEl.style.color = '#666';
+
+            try {
+                await addDoc(
+                    collection(db, 'scores'),
+                    {
+                        name: name,
+                        score: score,
+                        timestamp: serverTimestamp()
+                    }
+                );
+
+                localStorage.setItem('dinoJumpPlayerName', name);
+                playerName = name;
+                scoreSaved = true;
+
+                statusEl.textContent = 'Score salvo com sucesso!';
+                statusEl.style.color = '#27ae60';
+                saveBtn.textContent = '✅ SALVO!';
+
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                statusEl.textContent = 'Erro: ' + error.message;
+                statusEl.style.color = '#e74c3c';
+                saveBtn.disabled = false;
+            }
+        }
+
+        function startGame() {
+            requestAccelerometer();
+
+            gameRunning = true;
+            score = 0;
+            cameraY = 0;
+            tiltX = 0;
+            scoreSaved = false;
+            lastTime = 0; // reseta delta time
+
+            dino.x = canvas.width / 2;
+            dino.y = canvas.height - 150;
+            dino.vx = 0;
+            dino.vy = 0;
+            dino.facingRight = true;
+            dino.animTimer = 0;
+            dino.animFrame = 0;
+
+            particles = [];
+            initPlatforms();
+
+            document.getElementById('scoreDisplay').textContent = '0';
+            document.getElementById('highScoreDisplay').textContent = highScore;
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('active');
+
+            const nameInput = document.getElementById('playerName');
+            if (playerName) nameInput.value = playerName;
+
+            const saveBtn = document.getElementById('saveScoreBtn');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 SALVAR SCORE';
+            document.getElementById('saveStatus').textContent = '';
+
+            if ('ontouchstart' in window) {
+                document.getElementById('tiltHint').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('tiltHint').style.display = 'none';
+                }, 4000);
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('dinoJumpHighScore', highScore);
+            }
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalHighScore').textContent = highScore;
+            document.getElementById('highScoreDisplay').textContent = highScore;
+            document.getElementById('gameOverScreen').classList.add('active');
+
+            loadLeaderboard();
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('saveScoreBtn').addEventListener('click', saveScoreToFirebase);
+
+        document.getElementById('playerName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveScoreToFirebase();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !gameRunning) {
+                if (document.getElementById('gameOverScreen').classList.contains('active')) {
+                    startGame();
+                } else if (!document.getElementById('startScreen').classList.contains('hidden')) {
+                    startGame();
+                }
+            }
+        });
+
+        document.getElementById('highScoreDisplay').textContent = highScore;
+        initPlatforms();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

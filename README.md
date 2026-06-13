@@ -25,4 +25,5 @@ Leaderboard global em tempo real via Firebase;
 
 Delta Time: velocidade idêntica em qualquer monitor (60Hz, 144Hz...);
 
-Estilo cartoon com animações e partículas;.
+Estilo cartoon com animações e partículas;....
+

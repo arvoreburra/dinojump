@@ -14,6 +14,9 @@ Jogo de plataforma casual estilo cartoon onde você controla um dinossauro subin
 
 Dino Jump é um endless platformer inspirado no clássico Pou. O objetivo é simples, suba o máximo que puder sem cair! Quanto mais alto você chega, mais pontos acumula.
 
+https://github.com/arvoreburra/dinojump/blob/main/sistemas%20distribuidos.png
+
+
 # Diferenciais
 Controle por giroscópio no celular;
 
